@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # This script sets up a production-ready VPS with Prometheus monitoring.
 # It includes security hardening, service configuration, and monitoring.
 # It is designed to be run on a fresh Ubuntu/Debian system.
@@ -18,13 +19,19 @@ log_message() {
 }
 
 # Define variables
-USER_NAME=${user_name}
+USER_NAME="${user_name}"
 SSH_PORT=${ssh_port}
-
-ADMIN_SSH_KEY=${admin_ssh_key}
+SSH_KEY="${ssh_key}"
 USER_PASSWORD=${user_password}
 
 ${base}
+${fail2ban}
+
+${node_exporter}
+${tempo}
+${loki}
+${prometheus}
+${alloy}
 
 systemctl daemon-reload
 
