@@ -181,28 +181,6 @@ create_traefik_network() {
     fi
 }
 
-start_traefik() {
-    log "Starting Traefik..."
-    
-    cd "$TRAEFIK_DIR"
-    
-    # Use docker compose if available, otherwise docker-compose
-    if docker compose version >/dev/null 2>&1; then
-        sudo -u "$USER_NAME" docker compose up -d
-    else
-        sudo -u "$USER_NAME" docker-compose up -d
-    fi
-    
-    sleep 3
-    
-    if docker ps | grep -q "traefik"; then
-        log "Traefik started successfully"
-        log "Dashboard available at http://localhost:8080 (user: admin, pass: admin)"
-        log "Or at https://traefik.localhost (if DNS configured)"
-    else
-        error "Failed to start Traefik"
-    fi
-}
 
 create_usage_info() {
     log "Creating usage information..."
@@ -275,12 +253,11 @@ main() {
     create_docker_compose
     create_dynamic_config
     create_traefik_network
-    start_traefik
     create_usage_info
     
-    log "Traefik installation completed successfully!"
+    log "Traefik setup completed successfully!"
     log "Directory: $TRAEFIK_DIR"
-    log "Dashboard: http://localhost:8080"
+    log "To start Traefik: cd $TRAEFIK_DIR && docker compose up -d"
     log "See $TRAEFIK_DIR/README.md for usage instructions"
 }
 
