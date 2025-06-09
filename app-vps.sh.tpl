@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # This script sets up a production-ready VPS with Prometheus monitoring.
 # It includes security hardening, service configuration, and monitoring.
 # It is designed to be run on a fresh Ubuntu/Debian system.
@@ -18,20 +19,19 @@ log_message() {
 }
 
 # Define variables
-USER_NAME=
-SSH_PORT=
-
-ADMIN_SSH_KEY=
-USER_PASSWORD=
+USER_NAME="${user_name}"
+SSH_PORT=${ssh_port}
+SSH_KEY="${ssh_key}"
+USER_PASSWORD=${user_password}
 
 ${base}
-${fail2ban}
-${docker}
 
-log_message "Adding 'docker' admin groups..."
-usermod -aG docker admin
+${fail2ban}
+
+${node_exporter}
+
+${traefik}
 
 systemctl daemon-reload
 
-log_message "Finished VPS setup at $(date). The system will now reboot."
-reboot
+log_message "Finished VPS setup at $(date). Remember to update configs and then reboot."
