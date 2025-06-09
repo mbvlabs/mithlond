@@ -27,7 +27,7 @@ else
 fi
 
 log_message "Installing essential packages..."
-apt-get -y install curl ca-certificates gnupg debian-keyring debian-archive-keyring apt-transport-https net-tools
+apt-get -y install curl ca-certificates gnupg debian-keyring debian-archive-keyring apt-transport-https net-tools unzip
 
 log_message "Writing configuration files..."
 

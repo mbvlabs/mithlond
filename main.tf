@@ -47,6 +47,10 @@ resource "digitalocean_droplet" "test-server" {
     ssh_key       = var.ssh_key
     ssh_port      = var.ssh_port
 
+    caddy_username = var.caddy_username
+    caddy_password = var.caddy_password
+    domain         = var.domain
+
     base     = file("${path.module}/scripts/base.sh")
     fail2ban = file("${path.module}/scripts/fail2ban.sh"),
 
@@ -55,6 +59,8 @@ resource "digitalocean_droplet" "test-server" {
     loki          = file("${path.module}/scripts/loki.sh"),
     prometheus    = file("${path.module}/scripts/prometheus.sh"),
     alloy         = file("${path.module}/scripts/alloy.sh"),
+
+    caddy = file("${path.module}/scripts/caddy.sh"),
   })
 }
 

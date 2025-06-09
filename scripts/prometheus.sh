@@ -80,8 +80,12 @@ install_binaries() {
     chmod +x $PROMETHEUS_BIN_DIR/prometheus
     chmod +x $PROMETHEUS_BIN_DIR/promtool
     
-    cp -r consoles/* $PROMETHEUS_CONFIG_DIR/consoles/
-    cp -r console_libraries/* $PROMETHEUS_CONFIG_DIR/console_libraries/
+    if [ -d "consoles" ] && [ "$(ls -A consoles)" ]; then
+        cp -r consoles/* $PROMETHEUS_CONFIG_DIR/consoles/
+    fi
+    if [ -d "console_libraries" ] && [ "$(ls -A console_libraries)" ]; then
+        cp -r console_libraries/* $PROMETHEUS_CONFIG_DIR/console_libraries/
+    fi
     
     chown -R $PROMETHEUS_USER:$PROMETHEUS_GROUP $PROMETHEUS_CONFIG_DIR/consoles
     chown -R $PROMETHEUS_USER:$PROMETHEUS_GROUP $PROMETHEUS_CONFIG_DIR/console_libraries

@@ -24,14 +24,25 @@ SSH_PORT=${ssh_port}
 SSH_KEY="${ssh_key}"
 USER_PASSWORD=${user_password}
 
+CADDY_USERNAME=${caddy_username}
+CADDY_PASSWORD=${caddy_password}
+DOMAIN=${domain}
+
 ${base}
+
 ${fail2ban}
 
 ${node_exporter}
+
 ${tempo}
+
 ${loki}
+
 ${prometheus}
+
 ${alloy}
+
+${caddy}
 
 systemctl daemon-reload
 

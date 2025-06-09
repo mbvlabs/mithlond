@@ -1,73 +1,95 @@
-# Install Grafana Alloy
-log_message "Installing Grafana Alloy..."
+#!/bin/bash
 
-# Set default version if not provided
-ALLOY_VERSION=${ALLOY_VERSION:-"1.9.1"}
+log_message() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
+}
 
-# Create alloy user
-log_message "Creating alloy user..."
-useradd --system --no-create-home --shell /bin/false alloy || log_message "User alloy already exists"
+ALLOY_VERSION=${ALLOY_VERSION:-"1.9.1"} # Default Alloy version
 
-# Create necessary directories
-log_message "Creating alloy directories..."
+log_message "Starting Grafana Alloy installation script..."
+
+log_message "Creating alloy group and user..."
+
+groupadd --system alloy 2>/dev/null || true
+useradd --system --no-create-home --shell /bin/false --gid alloy alloy 2>/dev/null || true
+if ! id -u alloy >/dev/null 2>&1; then
+    log_message "ERROR: Failed to create user alloy. Exiting."
+    exit 1
+else
+    log_message "User alloy created or already exists."
+fi
+
+
+log_message "Creating alloy base directories and setting permissions..."
 mkdir -p /etc/alloy
-mkdir -p /var/lib/alloy
+mkdir -p /var/lib/alloy/data
 mkdir -p /var/log/alloy
+
+
+log_message "Setting ownership and permissions for alloy directories..."
+chown -R alloy:alloy /etc/alloy
 chown -R alloy:alloy /var/lib/alloy
 chown -R alloy:alloy /var/log/alloy
-chown -R alloy:alloy /etc/alloy
 
-# Download and install Alloy binary
+
+chmod 755 /etc/alloy
+chmod 755 /var/lib/alloy
+chmod 755 /var/lib/alloy/data
+chmod 755 /var/log/alloy
+
+chmod g+w /var/lib/alloy/data
+
 log_message "Downloading Grafana Alloy v${ALLOY_VERSION}..."
-cd /tmp
-wget -q https://github.com/grafana/alloy/releases/download/v${ALLOY_VERSION}/alloy-linux-amd64.zip
+cd /tmp || { log_message "ERROR: Failed to change directory to /tmp. Exiting."; exit 1; }
+
+wget -q "https://github.com/grafana/alloy/releases/download/v${ALLOY_VERSION}/alloy-linux-amd64.zip"
 
 if [ $? -ne 0 ]; then
-    log_message "ERROR: Failed to download Alloy binary"
+    log_message "ERROR: Failed to download Alloy binary from v${ALLOY_VERSION}. Please check version and network connectivity."
     exit 1
 fi
 
 log_message "Extracting and installing Alloy..."
 unzip -q alloy-linux-amd64.zip
-mv alloy-linux-amd64 /usr/local/bin/alloy
-chmod +x /usr/local/bin/alloy
+sudo mv alloy-linux-amd64 /usr/local/bin/alloy
+sudo chmod +x /usr/local/bin/alloy # Make the binary executable
 rm -f alloy-linux-amd64.zip
 
-# Create Alloy configuration
-log_message "Creating Alloy configuration..."
+# 5. Create Alloy configuration file
+log_message "Creating Alloy configuration file at /etc/alloy/config.alloy..."
 cat > /etc/alloy/config.alloy << 'EOF'
 // Alloy configuration for telemetry collection and forwarding
 
 // Prometheus metrics scraping and forwarding
 prometheus.scrape "default" {
   targets = [
-    {"__address__" = "localhost:9090"},
-    {"__address__" = "localhost:9100"},
-    {"__address__" = "localhost:3100"},
-    {"__address__" = "localhost:3200"},
+    {"__address__" = "localhost:9090"}, // Example: Prometheus metrics
+    {"__address__" = "localhost:9100"}, // Example: Node Exporter
+    {"__address__" = "localhost:3100"}, // Example: Loki
+    {"__address__" = "localhost:3200"}, // Example: Tempo
   ]
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
 prometheus.remote_write "default" {
   endpoint {
-    url = "http://localhost:9090/api/v1/write"
+    url = "http://localhost:9090/api/v1/write" // Adjust to your Prometheus/Mimir/Cortex endpoint
   }
 }
 
 // Loki log collection and forwarding
 loki.source.file "default" {
   targets = [
-    {__path__ = "/var/log/*.log"},
-    {__path__ = "/var/log/syslog"},
-    {__path__ = "/var/log/auth.log"},
+    {__path__ = "/var/log/*.log", job="system"},
+    {__path__ = "/var/log/syslog", job="syslog"},
+    {__path__ = "/var/log/auth.log", job="auth"},
   ]
   forward_to = [loki.write.default.receiver]
 }
 
 loki.write "default" {
   endpoint {
-    url = "http://localhost:3100/loki/api/v1/push"
+    url = "http://localhost:3100/loki/api/v1/push" // Adjust to your Loki endpoint
   }
 }
 
@@ -86,14 +108,14 @@ otelcol.receiver.otlp "default" {
 
 otelcol.exporter.otlp "tempo" {
   client {
-    endpoint = "http://localhost:4317"
+    endpoint = "http://localhost:4317" // Adjust to your Tempo endpoint (or other OTLP receiver)
     tls {
       insecure = true
     }
   }
 }
 
-// System metrics collection
+// System metrics collection (unix exporter for node_exporter equivalent)
 prometheus.exporter.unix "default" {
 }
 
@@ -103,10 +125,13 @@ prometheus.scrape "unix" {
 }
 EOF
 
-chown alloy:alloy /etc/alloy/config.alloy
+# Set ownership of the config file to alloy user
+sudo chown alloy:alloy /etc/alloy/config.alloy
+# Set permissions for the config file (read/write for owner, read-only for group/others)
+sudo chmod 644 /etc/alloy/config.alloy
 
-# Create systemd service
-log_message "Creating Alloy systemd service..."
+# 6. Create systemd service file
+log_message "Creating Alloy systemd service file at /etc/systemd/system/alloy.service..."
 cat > /etc/systemd/system/alloy.service << EOF
 [Unit]
 Description=Grafana Alloy
@@ -118,7 +143,8 @@ After=network-online.target
 Type=simple
 User=alloy
 Group=alloy
-ExecStart=/usr/local/bin/alloy run /etc/alloy/config.alloy
+# Ensure --storage.path points to the directory we configured permissions for
+ExecStart=/usr/local/bin/alloy run --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
@@ -131,23 +157,26 @@ KillSignal=SIGINT
 WantedBy=multi-user.target
 EOF
 
-# Enable and start Alloy service
-log_message "Enabling and starting Alloy service..."
-systemctl daemon-reload
-systemctl enable alloy
-systemctl start alloy
-
-# Verify installation
-log_message "Verifying Alloy installation..."
-sleep 5
-if systemctl is-active --quiet alloy; then
-    log_message "Alloy service is running successfully"
-    log_message "Alloy is collecting telemetry data and forwarding to backends"
-    log_message "OTLP endpoints available at: grpc://localhost:4317, http://localhost:4318"
-else
-    log_message "ERROR: Alloy service failed to start"
-    systemctl status alloy
-    exit 1
-fi
+# 7. Enable and start Alloy service
+log_message "Reloading systemd daemon, enabling, and starting Alloy service..."
+sudo systemctl daemon-reload
+sudo systemctl enable alloy
+# sudo systemctl start alloy
+#
+# # 8. Verify installation
+# log_message "Verifying Alloy installation..."
+# sleep 5 # Give some time for the service to start
+#
+# if systemctl is-active --quiet alloy; then
+#     log_message "SUCCESS: Alloy service is running successfully!"
+#     log_message "Alloy is configured to collect telemetry data and forward to backends."
+#     log_message "OTLP endpoints available at: grpc://localhost:4317, http://localhost:4318"
+#     log_message "Check logs with: journalctl -u alloy -f"
+# else
+#     log_message "ERROR: Alloy service failed to start."
+#     log_message "Displaying Alloy service status for debugging:"
+#     sudo systemctl status alloy
+#     exit 1
+# fi
 
 log_message "Finished Grafana Alloy installation at $(date)."

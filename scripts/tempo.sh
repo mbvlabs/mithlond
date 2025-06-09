@@ -29,7 +29,7 @@ fi
 
 log_message "Extracting and installing Tempo..."
 tar -xzf tempo_${TEMPO_VERSION}_linux_amd64.tar.gz
-mv tempo-linux-amd64 /usr/local/bin/tempo
+mv tempo /usr/local/bin/tempo
 chmod +x /usr/local/bin/tempo
 rm -f tempo_${TEMPO_VERSION}_linux_amd64.tar.gz
 
@@ -92,7 +92,7 @@ chown tempo:tempo /etc/tempo/tempo.yml
 log_message "Creating Tempo systemd service..."
 cat > /etc/systemd/system/tempo.service << EOF
 [Unit]
-Description=Grafana Tempo
+Description=Tempo
 Documentation=https://grafana.com/docs/tempo/
 Wants=network-online.target
 After=network-online.target
