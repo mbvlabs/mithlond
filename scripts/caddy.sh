@@ -19,33 +19,41 @@ cat > /etc/caddy/Caddyfile << 'EOF'
 #     respond "Telemetry Gateway" 200
 # }
 
-# telemetry-prometheus.your-domain.com {
+#telemetry-prometheus.mbvlabs.com {
 #     basic_auth {
 #         your-username your-hashed-password
 #     }
-#     reverse_proxy localhost:9090
-# }
+#        reverse_proxy localhost:9090
+#}
 
-# telemetry-loki.your-domain.com {
+#telemetry-loki.mbvlabs.com {
 #     basic_auth {
 #         your-username your-hashed-password
 #     }
-#     reverse_proxy localhost:3100
-# }
+#        reverse_proxy localhost:3100
+#}
 
-# telemetry-tempo.your-domain.com {
+#telemetry-tempo.mbvlabs.com {
 #     basic_auth {
 #         your-username your-hashed-password
 #     }
-#     reverse_proxy localhost:3200
-# }
+#
+#        reverse_proxy localhost:3200
+#}
 
-# telemetry-alloy.your-domain.com {
+#telemetry-alloy.mbvlabs.com {
 #     basic_auth {
 #         your-username your-hashed-password
 #     }
-#     reverse_proxy localhost:12345
-# }
+#
+#        # Route for /ingestor
+#        route /ingestor* {
+#                uri strip_prefix /ingestor
+#                reverse_proxy localhost:4321
+#        }
+#
+#        reverse_proxy localhost:12345
+#}
 EOF
 
 log_message "Enabling Caddy service (but not starting yet)..."

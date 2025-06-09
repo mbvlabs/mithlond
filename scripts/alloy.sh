@@ -58,70 +58,44 @@ rm -f alloy-linux-amd64.zip
 # 5. Create Alloy configuration file
 log_message "Creating Alloy configuration file at /etc/alloy/config.alloy..."
 cat > /etc/alloy/config.alloy << 'EOF'
-// Alloy configuration for telemetry collection and forwarding
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "localhost:4320"
+  }
+  http {
+    endpoint = "localhost:4321"
+  }
 
-// Prometheus metrics scraping and forwarding
-prometheus.scrape "default" {
-  targets = [
-    {"__address__" = "localhost:9090"}, // Example: Prometheus metrics
-    {"__address__" = "localhost:9100"}, // Example: Node Exporter
-    {"__address__" = "localhost:3100"}, // Example: Loki
-    {"__address__" = "localhost:3200"}, // Example: Tempo
-  ]
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.prometheus "default" {
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
 prometheus.remote_write "default" {
   endpoint {
-    url = "http://localhost:9090/api/v1/write" // Adjust to your Prometheus/Mimir/Cortex endpoint
-  }
-}
-
-// Loki log collection and forwarding
-loki.source.file "default" {
-  targets = [
-    {__path__ = "/var/log/*.log", job="system"},
-    {__path__ = "/var/log/syslog", job="syslog"},
-    {__path__ = "/var/log/auth.log", job="auth"},
-  ]
-  forward_to = [loki.write.default.receiver]
-}
-
-loki.write "default" {
-  endpoint {
-    url = "http://localhost:3100/loki/api/v1/push" // Adjust to your Loki endpoint
-  }
-}
-
-// OTLP receiver for traces
-otelcol.receiver.otlp "default" {
-  grpc {
-    endpoint = "0.0.0.0:4317"
-  }
-  http {
-    endpoint = "0.0.0.0:4318"
-  }
-  output {
-    traces  = [otelcol.exporter.otlp.tempo.input]
+    url = "http://localhost:9090/api/v1/write"
   }
 }
 
 otelcol.exporter.otlp "tempo" {
   client {
-    endpoint = "http://localhost:4317" // Adjust to your Tempo endpoint (or other OTLP receiver)
+    endpoint = "http://localhost:4317"
     tls {
       insecure = true
     }
   }
-}
-
-// System metrics collection (unix exporter for node_exporter equivalent)
-prometheus.exporter.unix "default" {
-}
-
-prometheus.scrape "unix" {
-  targets    = prometheus.exporter.unix.default.targets
-  forward_to = [prometheus.remote_write.default.receiver]
 }
 EOF
 

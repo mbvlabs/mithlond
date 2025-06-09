@@ -95,16 +95,47 @@ create_config() {
     log "Creating default Prometheus configuration..."
     
     cat > $PROMETHEUS_CONFIG_DIR/prometheus.yml << 'EOF'
+# prometheus.yml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-rule_files:
-
+# Prometheus handles all the scraping
 scrape_configs:
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # Node Exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 10s
+
+  # Loki metrics
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['localhost:3100']
+    metrics_path: /metrics
+
+  # Tempo metrics
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['localhost:3200']
+    metrics_path: /metrics
+
+  # Alloy self-monitoring (optional)
+  - job_name: 'alloy'
+    static_configs:
+      - targets: ['localhost:12345']  # Default Alloy metrics port
+    metrics_path: /metrics
+
+  # Add any application metrics endpoints here
+  # - job_name: 'my-app'
+  #   static_configs:
+  #     - targets: ['localhost:8080']
+  #   metrics_path: /metrics
 EOF
     
     chown $PROMETHEUS_USER:$PROMETHEUS_GROUP $PROMETHEUS_CONFIG_DIR/prometheus.yml
