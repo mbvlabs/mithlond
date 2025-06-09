@@ -56,21 +56,6 @@ variable "user_password" {
   sensitive   = true
 }
 
-variable "caddy_username" {
-  description = "Used for authenticating request to telemetry"
-  type        = string
-}
-
-variable "caddy_password" {
-  description = "Used for authenticating request to telemetry"
-  type        = string
-}
-
-variable "domain" {
-  description = "Used for reverse proxy in caddy"
-  type        = string
-}
-
 # Hetzner Cloud Variables (commented out)
 # variable "hcloud_token" {
 #   description = "Hetzner Cloud API token"

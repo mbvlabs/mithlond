@@ -20,28 +20,28 @@ cat > /etc/caddy/Caddyfile << 'EOF'
 # }
 
 # telemetry-prometheus.your-domain.com {
-#     basicauth {
+#     basic_auth {
 #         your-username your-hashed-password
 #     }
 #     reverse_proxy localhost:9090
 # }
 
 # telemetry-loki.your-domain.com {
-#     basicauth {
+#     basic_auth {
 #         your-username your-hashed-password
 #     }
 #     reverse_proxy localhost:3100
 # }
 
 # telemetry-tempo.your-domain.com {
-#     basicauth {
+#     basic_auth {
 #         your-username your-hashed-password
 #     }
 #     reverse_proxy localhost:3200
 # }
 
 # telemetry-alloy.your-domain.com {
-#     basicauth {
+#     basic_auth {
 #         your-username your-hashed-password
 #     }
 #     reverse_proxy localhost:12345
