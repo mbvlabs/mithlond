@@ -42,5 +42,4 @@ ${caddy}
 
 systemctl daemon-reload
 
-log_message "Finished VPS setup at $(date). The system will now reboot."
-reboot
+log_message "Finished VPS setup at $(date). Remember to update configs and then reboot."
