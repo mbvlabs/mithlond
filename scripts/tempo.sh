@@ -116,22 +116,9 @@ EOF
 
 # Note: Tempo ports will be handled by reverse proxy, no firewall rules needed
 
-# Enable and start Tempo service
-log_message "Enabling and starting Tempo service..."
+# Enable Tempo service (will start on reboot)
+log_message "Enabling Tempo service..."
 systemctl daemon-reload
 systemctl enable tempo
-systemctl start tempo
-
-# Verify installation
-log_message "Verifying Tempo installation..."
-sleep 5
-if systemctl is-active --quiet tempo; then
-    log_message "Tempo service is running successfully"
-    log_message "Tempo API available at: http://localhost:3200"
-else
-    log_message "ERROR: Tempo service failed to start"
-    systemctl status tempo
-    exit 1
-fi
 
 log_message "Finished Grafana Tempo installation at $(date)."

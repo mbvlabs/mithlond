@@ -49,20 +49,10 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd and start service
-log_message "Starting Node Exporter service..."
+# Reload systemd and enable service (will start on reboot)
+log_message "Enabling Node Exporter service..."
 systemctl daemon-reload
 systemctl enable node_exporter
-systemctl start node_exporter
-
-# Check if service started successfully
-if systemctl is-active --quiet node_exporter; then
-    log_message "Node Exporter service started successfully"
-else
-    log_message "ERROR: Node Exporter service failed to start"
-    systemctl status node_exporter
-    exit 1
-fi
 
 # Note: Port 9100 not opened to internet for security
 # Node Exporter will be accessible locally for Prometheus to scrape

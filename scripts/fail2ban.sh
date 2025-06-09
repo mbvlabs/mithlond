@@ -13,6 +13,6 @@ maxretry = 3
 bantime = 3600
 EOF
 
-systemctl enable --now fail2ban
+systemctl enable fail2ban
 
 log_message "Finished fail2ban setup at $(date)."

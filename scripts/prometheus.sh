@@ -138,21 +138,11 @@ WantedBy=multi-user.target
 EOF
 }
 
-start_service() {
-    log "Starting Prometheus service..."
+enable_service() {
+    log "Enabling Prometheus service (will start on reboot)..."
     
     systemctl daemon-reload
     systemctl enable prometheus
-    systemctl start prometheus
-    
-    sleep 3
-    
-    if systemctl is-active --quiet prometheus; then
-        log "Prometheus service started successfully"
-        log "Prometheus is available at http://localhost:9090"
-    else
-        error "Failed to start Prometheus service"
-    fi
 }
 
 cleanup() {
@@ -171,12 +161,12 @@ main() {
     install_binaries
     create_config
     create_systemd_service
-    start_service
+    enable_service
     cleanup
     
     log "Prometheus installation completed successfully!"
     log "Version: $PROMETHEUS_VERSION"
-    log "Service status: $(systemctl is-active prometheus)"
+    log "Service enabled and will start on reboot"
 }
 
 main "$@"

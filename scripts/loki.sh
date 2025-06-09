@@ -116,24 +116,9 @@ KillSignal=SIGTERM
 WantedBy=multi-user.target
 EOF
 
-# Enable and start service
-log_message "Enabling and starting Loki service..."
+# Enable service (will start on reboot)
+log_message "Enabling Loki service..."
 systemctl daemon-reload
 systemctl enable loki
-systemctl start loki
-
-# Wait a moment for service to start
-sleep 3
-
-# Check service status
-if systemctl is-active --quiet loki; then
-    log_message "Loki service started successfully"
-    log_message "Loki is listening on localhost:3100"
-else
-    log_message "ERROR: Failed to start Loki service"
-    log_message "Check service status with: systemctl status loki"
-    log_message "Check logs with: journalctl -u loki -f"
-    exit 1
-fi
 
 log_message "Finished Loki installation at $(date)."

@@ -8,55 +8,53 @@ apt-get install -y caddy
 
 log_message "Configuring Caddy for telemetry services..."
 
-# Create Caddyfile with reverse proxies for telemetry services
-cat > /etc/caddy/Caddyfile << EOF
+# Create example Caddyfile template
+cat > /etc/caddy/Caddyfile << 'EOF'
 # Telemetry services reverse proxy configuration
-# Domain is configured via DOMAIN environment variable
+# Replace 'your-domain.com' with your actual domain
+# Replace 'your-username' and 'your-hashed-password' with actual credentials
 
-$DOMAIN {
-    # Default homepage or API
-    respond "Telemetry Gateway" 200
-}
+# your-domain.com {
+#     # Default homepage or API
+#     respond "Telemetry Gateway" 200
+# }
 
-telemetry-prometheus.$DOMAIN {
-    basicauth {
-        $CADDY_USERNAME $CADDY_PASSWORD
-    }
-    reverse_proxy localhost:9090
-}
+# telemetry-prometheus.your-domain.com {
+#     basicauth {
+#         your-username your-hashed-password
+#     }
+#     reverse_proxy localhost:9090
+# }
 
-telemetry-loki.$DOMAIN {
-    basicauth {
-        $CADDY_USERNAME $CADDY_PASSWORD
-    }
-    reverse_proxy localhost:3100
-}
+# telemetry-loki.your-domain.com {
+#     basicauth {
+#         your-username your-hashed-password
+#     }
+#     reverse_proxy localhost:3100
+# }
 
-telemetry-tempo.\$DOMAIN {
-    basicauth {
-        \$CADDY_USERNAME \$CADDY_PASSWORD
-    }
-    reverse_proxy localhost:3200
-}
+# telemetry-tempo.your-domain.com {
+#     basicauth {
+#         your-username your-hashed-password
+#     }
+#     reverse_proxy localhost:3200
+# }
 
-telemetry-alloy.\$DOMAIN {
-    basicauth {
-        \$CADDY_USERNAME \$CADDY_PASSWORD
-    }
-    reverse_proxy localhost:12345
-}
+# telemetry-alloy.your-domain.com {
+#     basicauth {
+#         your-username your-hashed-password
+#     }
+#     reverse_proxy localhost:12345
+# }
 EOF
 
 log_message "Enabling Caddy service (but not starting yet)..."
 systemctl enable caddy
 
 log_message "Caddy installation and configuration completed."
-log_message "IMPORTANT: Before starting Caddy, ensure:"
-log_message "1. Set environment variables: DOMAIN, CADDY_USERNAME, CADDY_PASSWORD"
-log_message "2. Point your DNS records to this server's IP:"
-log_message "   - A record: \$DOMAIN -> SERVER_IP"
-log_message "   - A record: telemetry-prometheus.\$DOMAIN -> SERVER_IP"
-log_message "   - A record: telemetry-loki.\$DOMAIN -> SERVER_IP"
-log_message "   - A record: telemetry-tempo.\$DOMAIN -> SERVER_IP"
-log_message "   - A record: telemetry-alloy.\$DOMAIN -> SERVER_IP"
-log_message "3. Then start Caddy with: systemctl start caddy"
+log_message "IMPORTANT: Before rebooting, ensure:"
+log_message "1. Edit /etc/caddy/Caddyfile with your domain and credentials"
+log_message "2. Generate hashed password with: caddy hash-password"
+log_message "3. Point your DNS records to this server's IP"
+log_message "4. Uncomment and configure the routes in Caddyfile"
+log_message "5. Caddy will start automatically after reboot"

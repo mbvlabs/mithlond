@@ -24,6 +24,6 @@ cat > /etc/docker/daemon.json << EOF
 }
 EOF
 
-systemctl enable --now docker
+systemctl enable docker
 
 log_message "Finished docker setup at $(date)."
