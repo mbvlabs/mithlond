@@ -162,7 +162,8 @@ ExecStart=$PROMETHEUS_BIN_DIR/prometheus \\
     --web.console.templates=$PROMETHEUS_CONFIG_DIR/consoles \\
     --web.console.libraries=$PROMETHEUS_CONFIG_DIR/console_libraries \\
     --web.listen-address=0.0.0.0:9090 \\
-    --web.enable-lifecycle
+    --web.enable-lifecycle \
+    --web.enable-remote-write-receiver
 
 [Install]
 WantedBy=multi-user.target
