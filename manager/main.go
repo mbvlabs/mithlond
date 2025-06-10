@@ -210,6 +210,7 @@ func deployService(serviceName string, isPrivate bool) error {
 		"docker-compose.yml",
 		serviceName,
 	)
+	cmd.Dir = servicePath
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf(
@@ -470,6 +471,6 @@ func createServiceWithCompose(serviceName, dockerComposeContent string) error {
 }
 
 func validateDockerCompose(content string) error {
-	var dockerCompose interface{}
+	var dockerCompose any
 	return yaml.Unmarshal([]byte(content), &dockerCompose)
 }

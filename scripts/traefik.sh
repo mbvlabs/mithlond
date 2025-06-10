@@ -98,12 +98,12 @@ http:
         scheme: https
         permanent: true
 
-  metrics:
-    prometheus:
-      addEntryPointsLabels: true
-      addRoutersLabels: true
-      addServicesLabels: true
-      manualRouting: true
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+    manualRouting: true
 EOF
     
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_CONFIG_FILE"
@@ -119,10 +119,10 @@ create_docker_compose() {
 		DOMAIN=${DOMAIN:-"mbvlabs.com"}
 	fi
     
-    cat > "$TRAEFIK_COMPOSE_FILE" << EOF
+    cat > "$TRAEFIK_COMPOSE_FILE" << 'EOF'
 services:
   traefik:
-    image: traefik:${TRAEFIK_VERSION}
+    image: traefik:latest
     container_name: traefik
     restart: unless-stopped
     ports:
@@ -139,11 +139,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
-	  - "traefik.http.routers.dashboard.rule=Host(`traefik.whatthehell`)"
+	  - "traefik.http.routers.dashboard.rule=Host(`traefik.DOMAIN_PLACEHOLDER`)"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${MANAGER_AUTH_STRING}"
+	  - "traefik.http.middlewares.auth.basicauth.users=${MANAGER_AUTH_STRING}"
     networks:
       - traefik
 
@@ -154,7 +154,9 @@ networks:
 volumes:
   traefik-data:
 EOF
-   s 
+    
+    # Replace placeholders
+    sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" "$TRAEFIK_COMPOSE_FILE"
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_COMPOSE_FILE"
 }
 

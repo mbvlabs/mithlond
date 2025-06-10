@@ -10,6 +10,32 @@ This guide walks you through setting up an application server that can host and 
 4. **Terraform**: Install Terraform on your local machine
 5. **Go Binary**: Build the manager binary first
 
+## Telemetry Server
+
+1. check /var/log/vps_setup.log and verify that it has 'Finished VPS setup at <current-date>. Remember to update configs and then reboot.' at the end.
+2. update domain in /etc/caddy/Caddy and set basic auth
+3. run `sudo caddy fmt --overwrite` to format caddy file
+4. point the domains to the IP of your telemetry server in cloudlfare
+5. run `sudo reboot` to finish setup
+6. ssh back into the vps and verify that caddy is running properly (run `caddy reload` and you should see no errors) and check one of the endpoints (you should be prompted to enter the basic auth credentials)
+7. check telemetry-prometheus.your-domain/targets and verify that all targets are healthy 
+8. add the data sources you want in your grafana dashboard
+
+## Apps Server
+
+1. check /var/log/vps_setup.log and verify that it has 'Finished VPS setup at <current-date>. Remember to update configs and then reboot.' at the end.
+2. check all files under traefik and verify the domain and basic auth has been set correctly
+3. point the domains to the IP of your apps server in cloudlfare
+4. under traefik/dynamic replace http://up:port the manager and node_exporter with the apps server's IP (the url attribute under services:) 
+5. scp the binary in bin/manager into the server and move it into /usr/local/bin
+5. run `sudo reboot` to finish setup
+6. verify that the labels in traefik/docker-compose.yml has the same indentations, sometimes the setup script messes up the indentation
+7. ssh back into the apps server, cd into traefik and run `docker compose up -d`
+8. ssh into your telemetry server and add traefik and node_exporter as scrape targets. run `sudo systemctl restart prometheus` after
+9. go to telemetry-prometheus.your-domain/targets and verify all targets are healthy
+10. you can now add traefik and node exporter dashboard for the app server
+ 
+
 ## Step 1: Build the Manager Binary
 
 ```bash

@@ -36,34 +36,34 @@ provider "digitalocean" {
 #   value       = digitalocean_droplet.app-server.ipv4_address
 # }
 
-# resource "digitalocean_droplet" "test-server" {
-#   name   = "test-server"
-#   size   = var.small_server_size
-#   image  = var.image
-#   region = var.region_europe
-#   user_data = templatefile("${path.module}/telemetry-vps.sh.tpl", {
-#     user_name     = var.user_name
-#     user_password = var.user_password
-#     ssh_key       = var.ssh_key
-#     ssh_port      = var.ssh_port
-#
-#     base     = file("${path.module}/scripts/base.sh")
-#     fail2ban = file("${path.module}/scripts/fail2ban.sh"),
-#
-#     node_exporter = file("${path.module}/scripts/node_exporter.sh"),
-#     tempo         = file("${path.module}/scripts/tempo.sh"),
-#     loki          = file("${path.module}/scripts/loki.sh"),
-#     prometheus    = file("${path.module}/scripts/prometheus.sh"),
-#     alloy         = file("${path.module}/scripts/alloy.sh"),
-#
-#     caddy = file("${path.module}/scripts/caddy.sh"),
-#   })
-# }
-#
-# output "test_server_ip" {
-#   description = "IP address of the created server"
-#   value       = digitalocean_droplet.test-server.ipv4_address
-# }
+resource "digitalocean_droplet" "test-server" {
+  name   = "test-server"
+  size   = var.small_server_size
+  image  = var.image
+  region = var.region_europe
+  user_data = templatefile("${path.module}/telemetry-vps.sh.tpl", {
+    user_name     = var.user_name
+    user_password = var.user_password
+    ssh_key       = var.ssh_key
+    ssh_port      = var.ssh_port
+
+    base     = file("${path.module}/scripts/base.sh")
+    fail2ban = file("${path.module}/scripts/fail2ban.sh"),
+
+    node_exporter = file("${path.module}/scripts/node_exporter.sh"),
+    tempo         = file("${path.module}/scripts/tempo.sh"),
+    loki          = file("${path.module}/scripts/loki.sh"),
+    prometheus    = file("${path.module}/scripts/prometheus.sh"),
+    alloy         = file("${path.module}/scripts/alloy.sh"),
+
+    caddy = file("${path.module}/scripts/caddy.sh"),
+  })
+}
+
+output "test_server_ip" {
+  description = "IP address of the created server"
+  value       = digitalocean_droplet.test-server.ipv4_address
+}
 
 resource "digitalocean_droplet" "app-test-server" {
   name   = "app-test-server"
