@@ -98,4 +98,6 @@ sudo ufw enable 9100/tcp
 
 ${traefik}
 
+${docker_rollout}
+
 log_message "Finished VPS setup at $(date). Remember to update configs and then reboot."

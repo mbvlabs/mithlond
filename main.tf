@@ -70,7 +70,6 @@ resource "digitalocean_droplet" "app-test-server" {
   size   = var.small_server_size
   image  = var.image
   region = var.region_europe
-  # ssh_keys = [var.ssh_key]
   user_data = templatefile("${path.module}/app-vps.sh.tpl", {
     user_name     = var.user_name
     user_password = var.user_password
@@ -84,6 +83,7 @@ resource "digitalocean_droplet" "app-test-server" {
 
     node_exporter = file("${path.module}/scripts/node_exporter.sh"),
     traefik       = file("${path.module}/scripts/traefik.sh"),
+    docker_rollout       = file("${path.module}/scripts/docker_rollout.sh"),
 
     manager_domain     = var.manager_domain
     manager_password   = var.manager_password
