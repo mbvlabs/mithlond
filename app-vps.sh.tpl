@@ -32,7 +32,6 @@ ${fail2ban}
 
 ${docker}
 
-${node_exporter}
 
 # Generate basic auth hash for manager (username: manager, password: ${manager_password})
 MANAGER_AUTH_HASH=$(echo -n "${manager_password}" | openssl passwd -apr1 -stdin)
@@ -73,7 +72,6 @@ systemctl daemon-reload
 systemctl enable manager.service
 
 sudo ufw allow 9090/tcp
-sudo ufw allow 9100/tcp
 
 ${traefik}
 

@@ -147,6 +147,29 @@ services:
     networks:
       - traefik
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/host/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - '/proc:/host/proc:ro'
+      - '/sys:/host/sys:ro'
+      - '/:/host/rootfs:ro'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodeexporter.rule=Host(`apps-node-exporter.DOMAIN_PLACEHOLDER`)"
+      - "traefik.http.routers.nodeexporter.entrypoints=websecure"
+      - "traefik.http.routers.nodeexporter.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.nodeexporter.middlewares=auth"
+      - "traefik.http.services.nodeexporter.loadbalancer.server.port=9100"
+    networks:
+      - traefik
+
 networks:
   traefik:
     external: true
@@ -215,35 +238,6 @@ http:
           - metrics-auth
 EOF
 
-# Create node exporter service dynamic configuration template
-cat > "$TRAEFIK_DYNAMIC_DIR/node_exporter.yml" << 'EOF'
-# Node exporter service configuration
-# This exposes node exporter from traefik
-http:
-  routers:
-    nodeexporter:
-      rule: "Host(`apps-node-exporter.MANAGER_DOMAIN_PLACEHOLDER`)"
-      entrypoints:
-        - websecure
-      service: nodexporter-service
-      tls:
-        certResolver: letsencrypt
-      middlewares:
-        - manager-auth
-
-  services:
-    nodexporter-service:
-      loadBalancer:
-        servers:
-          - url: "http://ip:9100"
-
-
-  middlewares:
-    manager-auth:
-      basicAuth:
-        users:
-          - MANAGER_AUTH_PLACEHOLDER
-EOF
     
 chown -R "$USER_NAME:$USER_NAME" "$TRAEFIK_DYNAMIC_DIR"
 }
