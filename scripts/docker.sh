@@ -26,4 +26,6 @@ EOF
 
 systemctl enable docker
 
+sudo usermod -aG docker $USER_NAME
+
 log_message "Finished docker setup at $(date)."

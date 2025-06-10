@@ -35,18 +35,24 @@ type DeployServiceRequest struct {
 func loginToDockerHub() error {
 	username := os.Getenv("DOCKER_USERNAME")
 	password := os.Getenv("DOCKER_PASSWORD")
-	
+
 	if username == "" || password == "" {
-		return errors.New("DOCKER_USERNAME and DOCKER_PASSWORD environment variables are required for private images")
+		return errors.New(
+			"DOCKER_USERNAME and DOCKER_PASSWORD environment variables are required for private images",
+		)
 	}
-	
+
 	cmd := exec.Command("docker", "login", "-u", username, "--password-stdin")
 	cmd.Stdin = strings.NewReader(password)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker login failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf(
+			"docker login failed: %v\nOutput: %s",
+			err,
+			string(output),
+		)
 	}
-	
+
 	return nil
 }
 
@@ -137,7 +143,11 @@ func stopAndCleanupService(serviceName string) error {
 	cmd.Dir = servicePath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker compose down failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf(
+			"docker compose down failed: %v\nOutput: %s",
+			err,
+			string(output),
+		)
 	}
 	return nil
 }
@@ -146,7 +156,11 @@ func pruneUnusedDockerResources() error {
 	cmd := exec.Command("docker", "system", "prune", "-f")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker system prune failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf(
+			"docker system prune failed: %v\nOutput: %s",
+			err,
+			string(output),
+		)
 	}
 	return nil
 }
@@ -182,13 +196,27 @@ func deployService(serviceName string, isPrivate bool) error {
 	cmd.Dir = servicePath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker compose pull failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf(
+			"docker compose pull failed: %v\nOutput: %s",
+			err,
+			string(output),
+		)
 	}
 
-	cmd = exec.Command("docker", "rollout", serviceName)
+	cmd = exec.Command(
+		"docker",
+		"rollout",
+		"-f",
+		"docker-compose.yml",
+		serviceName,
+	)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker rollout failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf(
+			"docker rollout failed: %v\nOutput: %s",
+			err,
+			string(output),
+		)
 	}
 
 	if err := pruneUnusedDockerResources(); err != nil {
@@ -236,7 +264,7 @@ func main() {
 	e.DELETE("/services/:name", removeService)
 	e.PUT("/services/:name/deploy", deployServiceEndpoint)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start("0.0.0.0:9090"))
 }
 
 func createService(c echo.Context) error {

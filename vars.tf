@@ -56,6 +56,28 @@ variable "user_password" {
   sensitive   = true
 }
 
+variable "manager_domain" {
+  description = "Domain for the manager service (e.g., manager.yourdomain.com)"
+  type        = string
+}
+
+variable "manager_password" {
+  description = "Password for manager service basic auth"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_email" {
+  description = "Cloudflare account email for DNS challenge"
+  type        = string
+}
+
+variable "cloudflare_api_key" {
+  description = "Cloudflare Global API Key for DNS challenge"
+  type        = string
+  sensitive   = true
+}
+
 # Hetzner Cloud Variables (commented out)
 # variable "hcloud_token" {
 #   description = "Hetzner Cloud API token"

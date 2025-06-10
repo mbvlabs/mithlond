@@ -74,7 +74,9 @@ providers:
 certificatesResolvers:
   letsencrypt:
     acme:
-      tlsChallenge: {}
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 0
       email: changeme@example.com
       storage: /data/acme.json
 
@@ -94,6 +96,13 @@ http:
       redirectScheme:
         scheme: https
         permanent: true
+
+  metrics:
+    prometheus:
+      addEntryPointsLabels: true
+      addRoutersLabels: true
+      addServicesLabels: true
+      manualRouting: true
 EOF
     
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_CONFIG_FILE"
@@ -113,7 +122,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"  # Dashboard
+      - "8080:8080"
+    env_file:
+      - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
@@ -126,7 +137,7 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:\$\$2y\$\$10\$\$DmX3XwNS4QZ8ZwUf2Qcjy.9sP6yfNfM7YJY5X0Q4J2xVf8E0G8lKa"
+      - "traefik.http.middlewares.auth.basicauth.users=${MANAGER_AUTH_STRING}"
     networks:
       - traefik
 
@@ -167,7 +178,90 @@ http:
     #       - url: "http://localhost:3000"
 EOF
     
-    chown -R "$USER_NAME:$USER_NAME" "$TRAEFIK_DYNAMIC_DIR"
+# Create manager service dynamic configuration template
+cat > "$TRAEFIK_DYNAMIC_DIR/manager.yml" << 'EOF'
+# Manager service configuration
+# This routes traffic to the manager API service
+
+http:
+  routers:
+    manager:
+      rule: "Host(`apps-manager.$DOMAIN`)"
+      entrypoints:
+        - websecure
+      service: manager-service
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - manager-auth
+
+  services:
+    manager-service:
+      loadBalancer:
+        servers:
+          - url: "http://ip:9090"
+
+  middlewares:
+    manager-auth:
+      basicAuth:
+        users:
+            - ${MANAGER_AUTH_STRING}
+EOF
+    
+# Create metrics service dynamic configuration template
+cat > "$TRAEFIK_DYNAMIC_DIR/metrics.yml" << 'EOF'
+# Metrics service configuration
+# This exposes metrics from traefik
+http:
+    middlewares:
+      metrics-auth:
+        basicAuth:
+          users:
+            - ${MANAGER_AUTH_STRING}
+
+    routers:
+      metrics:
+        entryPoints:
+          - websecure
+        rule: "Host(`traefik.$DOMAIN`) && PathPrefix(`/metrics`)"
+        service: prometheus@internal
+        tls:
+          certResolver: letsencrypt
+        middlewares:
+          - metrics-auth
+EOF
+
+# Create node exporter service dynamic configuration template
+cat > "$TRAEFIK_DYNAMIC_DIR/node_exporter.yml" << 'EOF'
+# Node exporter service configuration
+# This exposes node exporter from traefik
+http:
+  routers:
+    nodeexporter:
+      rule: "Host(`apps-node-exporter.$DOMAIN`)"
+      entrypoints:
+        - websecure
+      service: nodexporter-service
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - manager-auth
+
+  services:
+    nodexporter-service:
+      loadBalancer:
+        servers:
+          - url: "http://ip:9100"
+
+
+  middlewares:
+    manager-auth:
+      basicAuth:
+        users:
+          - ${MANAGER_AUTH_STRING}
+EOF
+    
+chown -R "$USER_NAME:$USER_NAME" "$TRAEFIK_DYNAMIC_DIR"
 }
 
 create_traefik_network() {
@@ -236,7 +330,18 @@ networks:
 
 ### SSL Certificates
 
-Let's Encrypt is configured for automatic SSL certificates. Update the email in `traefik.yml`.
+Let's Encrypt is configured for automatic SSL certificates using Cloudflare DNS challenge.
+Configure your Cloudflare credentials in the `.env` file:
+
+```
+CLOUDFLARE_EMAIL=your-email@example.com
+CLOUDFLARE_API_KEY=your-global-api-key
+```
+
+### Manager Service
+
+The manager service is automatically configured and accessible at your specified domain.
+Access it using the configured manager credentials.
 EOF
     
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_DIR/README.md"
