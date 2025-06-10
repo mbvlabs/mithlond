@@ -147,6 +147,26 @@ services:
     networks:
       - traefik
 
+  manager:
+    image: mbvofdocker/app-manager:latest
+    container_name: manager
+    restart: unless-stopped
+    environment:
+      - API_USERNAME=${MANAGER_USERNAME}
+      - API_PASSWORD=${MANAGER_PASSWORD}
+      - DOCKER_USERNAME=${DOCKER_USERNAME}
+      - DOCKER_PASSWORD=${DOCKER_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.manager.entrypoints=websecure"
+      - "traefik.http.routers.manager.rule=Host(`apps-manager.DOMAIN_PLACEHOLDER`)"
+      - "traefik.http.routers.manager.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.manager.middlewares=manager-auth"
+      - "traefik.http.middlewares.manager-auth.basicauth.users=${MANAGER_AUTH_STRING}"
+      - "traefik.http.services.manager.loadbalancer.server.port=9090"
+    networks:
+      - traefik
+
 networks:
   traefik:
     external: true
@@ -162,35 +182,6 @@ EOF
 
 create_dynamic_config() {
     log "Creating dynamic configurations..."
-# Create manager service dynamic configuration template
-cat > "$TRAEFIK_DYNAMIC_DIR/manager.yml" << 'EOF'
-# Manager service configuration
-# This routes traffic to the manager API service
-
-http:
-  routers:
-    manager:
-      rule: "Host(`apps-manager.MANAGER_DOMAIN_PLACEHOLDER`)"
-      entrypoints:
-        - websecure
-      service: manager-service
-      tls:
-        certResolver: letsencrypt
-      middlewares:
-        - manager-auth
-
-  services:
-    manager-service:
-      loadBalancer:
-        servers:
-          - url: "http://ip:9090"
-
-  middlewares:
-    manager-auth:
-      basicAuth:
-        users:
-            - MANAGER_AUTH_PLACEHOLDER
-EOF
     
 # Create metrics service dynamic configuration template
 cat > "$TRAEFIK_DYNAMIC_DIR/metrics.yml" << 'EOF'

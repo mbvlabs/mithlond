@@ -38,41 +38,9 @@ ${node_exporter}
 MANAGER_AUTH_HASH=$(echo -n "${manager_password}" | openssl passwd -apr1 -stdin)
 MANAGER_AUTH_STRING="manager:$MANAGER_AUTH_HASH"
 
-# Manager binary will be uploaded by Terraform provisioner
-log_message "Manager binary will be installed by Terraform provisioner"
+# Manager will run as Docker container through Traefik compose
+log_message "Manager will be deployed as Docker container"
 
-# Create systemd service file for manager
-log_message "Creating systemd service file for manager"
-cat > /etc/systemd/system/manager.service << EOF
-[Unit]
-Description=Application Manager Service
-After=network.target docker.service
-Requires=docker.service
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=$USER_NAME
-Group=$USER_NAME
-ExecStart=/usr/local/bin/manager
-Environment=API_USERNAME=${manager_username}
-Environment=API_PASSWORD=${manager_password}
-Environment=DOCKER_USERNAME=${docker_username}
-Environment=DOCKER_PASSWORD=${docker_password}
-WorkingDirectory=/home/$USER_NAME
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable manager service (but don't start it yet)
-log_message "Enabling manager service"
-systemctl daemon-reload
-systemctl enable manager.service
-
-sudo ufw allow 9090/tcp
 sudo ufw allow 9100/tcp
 
 ${traefik}
@@ -83,11 +51,15 @@ cat > "/home/$USER_NAME/traefik/.env" << EOF
 CLOUDFLARE_EMAIL=${cloudflare_email}
 CLOUDFLARE_API_KEY=${cloudflare_api_key}
 MANAGER_AUTH_STRING=$MANAGER_AUTH_STRING
+MANAGER_USERNAME=${manager_username}
+MANAGER_PASSWORD=${manager_password}
+DOCKER_USERNAME=${docker_username}
+DOCKER_PASSWORD=${docker_password}
 EOF
 chown "$USER_NAME:$USER_NAME" "/home/$USER_NAME/traefik/.env"
 
-# Configure manager service in Traefik
-log_message "Configuring manager service routing in Traefik"
+# Configure dynamic config files for remaining services
+log_message "Configuring dynamic service routing in Traefik"
 # Replace placeholders in all dynamic config files
 for config_file in "/home/$USER_NAME/traefik/dynamic"/*.yml; do
     if [ -f "$config_file" ]; then
@@ -96,7 +68,7 @@ for config_file in "/home/$USER_NAME/traefik/dynamic"/*.yml; do
         chown "$USER_NAME:$USER_NAME" "$config_file"
     fi
 done
-log_message "Manager service configured for domain: $DOMAIN"
+log_message "Dynamic services configured for domain: $DOMAIN"
 
 ${docker_rollout}
 

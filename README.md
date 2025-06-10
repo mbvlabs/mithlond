@@ -26,8 +26,7 @@ This guide walks you through setting up an application server that can host and 
 1. check /var/log/vps_setup.log and verify that it has 'Finished VPS setup at <current-date>. Remember to update configs and then reboot.' at the end.
 2. check all files under traefik and verify the domain and basic auth has been set correctly
 3. point the domains to the IP of your apps server in cloudlfare
-4. under traefik/dynamic replace http://up:port the manager and node_exporter with the apps server's IP (the url attribute under services:) 
-5. scp the binary in bin/manager into the server and move it into /usr/local/bin
+4. under traefik/dynamic replace http://ip:port for node_exporter with the apps server's IP (the url attribute under services:)
 5. run `sudo reboot` to finish setup
 6. verify that the labels in traefik/docker-compose.yml has the same indentations, sometimes the setup script messes up the indentation
 7. ssh back into the apps server, cd into traefik and run `docker compose up -d`
@@ -76,7 +75,7 @@ terraform apply
 
 This will:
 - Create a VPS with Docker and security hardening
-- Install the manager binary as a systemd service
+- Deploy the manager as a Docker container via Traefik
 - Set up Traefik reverse proxy with Cloudflare DNS challenge
 - Configure SSL certificates automatically
 - Set up domain routing for the manager service
@@ -92,23 +91,18 @@ After deployment, you need to:
 # SSH into your server
 ssh -p 2222 your-username@your-server-ip
 
-# Start Traefik
+# Start Traefik with Manager
 cd ~/traefik
+
+# Verify environment variables are set correctly in .env file
+cat .env
+
+# Start both Traefik and Manager containers
 docker compose up -d
 
-# Configure and start manager service
-sudo systemctl edit manager.service
-
-# Add your actual credentials:
-[Service]
-Environment=API_USERNAME=your-api-username
-Environment=API_PASSWORD=your-api-password
-Environment=DOCKER_USERNAME=your-docker-username
-Environment=DOCKER_PASSWORD=your-docker-password
-
-# Start the manager service
-sudo systemctl start manager.service
-sudo systemctl status manager.service
+# Check container status
+docker compose ps
+docker compose logs manager
 ```
 
 ## Step 5: Using the Manager API
@@ -183,12 +177,12 @@ networks:
 ## Monitoring and Logs
 
 - **Traefik Dashboard**: Access at `https://traefik.yourdomain.com` (configure domain in traefik config)
-- **Manager Logs**: `sudo journalctl -u manager.service -f`
+- **Manager Logs**: `cd ~/traefik && docker compose logs manager -f`
 - **Traefik Logs**: `cd ~/traefik && docker compose logs -f`
 
 ## Security Notes
 
-1. **Change Default Passwords**: Always change the default passwords in the systemd service
+1. **Change Default Passwords**: Always change the default passwords in the .env file
 2. **SSH Key Only**: The server is configured for SSH key authentication only
 3. **Fail2ban**: Automatic IP blocking for failed login attempts
 4. **SSL/TLS**: All traffic is automatically encrypted with Let's Encrypt certificates
@@ -196,9 +190,11 @@ networks:
 
 ## Troubleshooting
 
-### Manager Service Won't Start
+### Manager Container Won't Start
 ```bash
-sudo journalctl -u manager.service -n 50
+cd ~/traefik
+docker compose logs manager
+docker compose ps
 ```
 
 ### SSL Certificates Not Working
@@ -221,8 +217,8 @@ docker compose logs traefik | grep -i error
 │   ├── traefik.yml
 │   ├── .env (Cloudflare credentials)
 │   └── dynamic/
-│       ├── manager.yml (Manager service routing)
-│       └── example.yml
+│       ├── metrics.yml (Metrics service routing)
+│       └── node_exporter.yml (Node exporter routing)
 ├── service1/
 │   └── docker-compose.yml
 └── service2/
@@ -236,4 +232,4 @@ docker compose logs traefik | grep -i error
 - **Automatic SSL**: Let's Encrypt certificates via Cloudflare DNS challenge
 - **Reverse Proxy**: Traefik automatically routes traffic to your applications
 - **Monitoring Ready**: Node exporter installed for Prometheus monitoring
-- **Production Ready**: Systemd services, proper logging, and restart policies
+- **Production Ready**: Docker containers, proper logging, and restart policies
