@@ -7,6 +7,7 @@ TRAEFIK_DIR="/home/$USER_NAME/traefik"
 TRAEFIK_CONFIG_FILE="$TRAEFIK_DIR/traefik.yml"
 TRAEFIK_COMPOSE_FILE="$TRAEFIK_DIR/docker-compose.yml"
 TRAEFIK_DYNAMIC_DIR="$TRAEFIK_DIR/dynamic"
+# CLOUDFLARE_EMAIL="${cloudflare_email}"
 
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
@@ -77,7 +78,7 @@ certificatesResolvers:
       dnsChallenge:
         provider: cloudflare
         delayBeforeCheck: 0
-      email: changeme@example.com
+      email: cloudflare_email
       storage: /data/acme.json
 
 # Global redirect to https
@@ -106,14 +107,19 @@ http:
 EOF
     
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_CONFIG_FILE"
+    
+	sed -i "s/cloudflare_email/$CLOUDFLARE_EMAIL/g" "$TRAEFIK_CONFIG_FILE"
 }
 
 create_docker_compose() {
     log "Creating Docker Compose configuration..."
+
+	if [ -z "$DOMAIN" ]; then
+    	log "ERROR: DOMAIN variable is not set"
+		DOMAIN=${DOMAIN:-"mbvlabs.com"}
+	fi
     
     cat > "$TRAEFIK_COMPOSE_FILE" << EOF
-version: '3.8'
-
 services:
   traefik:
     image: traefik:${TRAEFIK_VERSION}
@@ -132,8 +138,8 @@ services:
       - traefik-data:/data
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(\`traefik.localhost\`)"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
+	  - "traefik.http.routers.dashboard.rule=Host(`traefik.whatthehell`)"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth"
@@ -148,36 +154,12 @@ networks:
 volumes:
   traefik-data:
 EOF
-    
+   s 
     chown "$USER_NAME:$USER_NAME" "$TRAEFIK_COMPOSE_FILE"
 }
 
 create_dynamic_config() {
-    log "Creating dynamic configuration example..."
-    
-    cat > "$TRAEFIK_DYNAMIC_DIR/example.yml" << 'EOF'
-# Example dynamic configuration
-# Add your custom routes here
-
-http:
-  routers:
-    # Example router (uncomment and modify as needed)
-    # my-app:
-    #   rule: "Host(`myapp.example.com`)"
-    #   entrypoints:
-    #     - websecure
-    #   service: my-app-service
-    #   tls:
-    #     certResolver: letsencrypt
-
-  services:
-    # Example service (uncomment and modify as needed)
-    # my-app-service:
-    #   loadBalancer:
-    #     servers:
-    #       - url: "http://localhost:3000"
-EOF
-    
+    log "Creating dynamic configurations..."
 # Create manager service dynamic configuration template
 cat > "$TRAEFIK_DYNAMIC_DIR/manager.yml" << 'EOF'
 # Manager service configuration
@@ -186,7 +168,7 @@ cat > "$TRAEFIK_DYNAMIC_DIR/manager.yml" << 'EOF'
 http:
   routers:
     manager:
-      rule: "Host(`apps-manager.$DOMAIN`)"
+      rule: "Host(`apps-manager.MANAGER_DOMAIN_PLACEHOLDER`)"
       entrypoints:
         - websecure
       service: manager-service
@@ -205,7 +187,7 @@ http:
     manager-auth:
       basicAuth:
         users:
-            - ${MANAGER_AUTH_STRING}
+            - MANAGER_AUTH_PLACEHOLDER
 EOF
     
 # Create metrics service dynamic configuration template
@@ -217,13 +199,13 @@ http:
       metrics-auth:
         basicAuth:
           users:
-            - ${MANAGER_AUTH_STRING}
+            - MANAGER_AUTH_PLACEHOLDER
 
     routers:
       metrics:
         entryPoints:
           - websecure
-        rule: "Host(`traefik.$DOMAIN`) && PathPrefix(`/metrics`)"
+        rule: "Host(`traefik.MANAGER_DOMAIN_PLACEHOLDER`) && PathPrefix(`/metrics`)"
         service: prometheus@internal
         tls:
           certResolver: letsencrypt
@@ -238,7 +220,7 @@ cat > "$TRAEFIK_DYNAMIC_DIR/node_exporter.yml" << 'EOF'
 http:
   routers:
     nodeexporter:
-      rule: "Host(`apps-node-exporter.$DOMAIN`)"
+      rule: "Host(`apps-node-exporter.MANAGER_DOMAIN_PLACEHOLDER`)"
       entrypoints:
         - websecure
       service: nodexporter-service
@@ -258,7 +240,7 @@ http:
     manager-auth:
       basicAuth:
         users:
-          - ${MANAGER_AUTH_STRING}
+          - MANAGER_AUTH_PLACEHOLDER
 EOF
     
 chown -R "$USER_NAME:$USER_NAME" "$TRAEFIK_DYNAMIC_DIR"
@@ -302,7 +284,7 @@ To expose a Docker service through Traefik, add these labels to your docker-comp
 services:
   your-app:
     image: your-app:latest
-    labels:
+ \   labels:
       - "traefik.enable=true"
       - "traefik.http.routers.your-app.rule=Host(`your-app.localhost`)"
       - "traefik.http.routers.your-app.entrypoints=websecure"

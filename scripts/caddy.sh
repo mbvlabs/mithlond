@@ -14,46 +14,41 @@ cat > /etc/caddy/Caddyfile << 'EOF'
 # Replace 'your-domain.com' with your actual domain
 # Replace 'your-username' and 'your-hashed-password' with actual credentials
 
-# your-domain.com {
-#     # Default homepage or API
-#     respond "Telemetry Gateway" 200
-# }
+telemetry-prometheus.mbvlabs.com {
+     basic_auth {
+         your-username your-hashed-password
+     }
+        reverse_proxy localhost:9090
+}
 
-#telemetry-prometheus.mbvlabs.com {
-#     basic_auth {
-#         your-username your-hashed-password
-#     }
-#        reverse_proxy localhost:9090
-#}
+telemetry-loki.mbvlabs.com {
+     basic_auth {
+         your-username your-hashed-password
+     }
+        reverse_proxy localhost:3100
+}
 
-#telemetry-loki.mbvlabs.com {
-#     basic_auth {
-#         your-username your-hashed-password
-#     }
-#        reverse_proxy localhost:3100
-#}
+telemetry-tempo.mbvlabs.com {
+     basic_auth {
+         your-username your-hashed-password
+     }
 
-#telemetry-tempo.mbvlabs.com {
-#     basic_auth {
-#         your-username your-hashed-password
-#     }
-#
-#        reverse_proxy localhost:3200
-#}
+        reverse_proxy localhost:3200
+}
 
-#telemetry-alloy.mbvlabs.com {
-#     basic_auth {
-#         your-username your-hashed-password
-#     }
-#
-#        # Route for /ingestor
-#        route /ingestor* {
-#                uri strip_prefix /ingestor
-#                reverse_proxy localhost:4321
-#        }
-#
-#        reverse_proxy localhost:12345
-#}
+telemetry-alloy.mbvlabs.com {
+     basic_auth {
+         your-username your-hashed-password
+     }
+
+        # Route for /ingestor
+        route /ingestor* {
+                uri strip_prefix /ingestor
+                reverse_proxy localhost:4321
+        }
+
+        reverse_proxy localhost:12345
+}
 EOF
 
 log_message "Enabling Caddy service (but not starting yet)..."

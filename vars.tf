@@ -61,8 +61,26 @@ variable "manager_domain" {
   type        = string
 }
 
+variable "manager_username" {
+  description = "Username for manager service basic auth"
+  type        = string
+  sensitive   = true
+}
+
 variable "manager_password" {
   description = "Password for manager service basic auth"
+  type        = string
+  sensitive   = true
+}
+
+variable "docker_username" {
+  description = "Username for docker service basic auth"
+  type        = string
+  sensitive   = true
+}
+
+variable "docker_password" {
+  description = "Password for docker service basic auth"
   type        = string
   sensitive   = true
 }

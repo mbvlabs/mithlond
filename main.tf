@@ -86,7 +86,13 @@ resource "digitalocean_droplet" "app-test-server" {
     docker_rollout       = file("${path.module}/scripts/docker_rollout.sh"),
 
     manager_domain     = var.manager_domain
+
+    docker_username   = var.docker_username
+    docker_password   = var.docker_password
+
+    manager_username   = var.manager_username
     manager_password   = var.manager_password
+
     cloudflare_email   = var.cloudflare_email
     cloudflare_api_key = var.cloudflare_api_key
   })
